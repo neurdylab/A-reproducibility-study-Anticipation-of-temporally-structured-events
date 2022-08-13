@@ -377,7 +377,7 @@ def save_nii(new_fpath, header_fpath, data):
     new_img = nib.Nifti1Image(data.T, img.affine, img.header)
     nib.save(new_img, new_fpath)
 
-def load_sliced_nii(fpath, tsv_fpath, cond='All'):
+def load_sliced_nii(fpath, tsv_fpath, cond='All', number=np.nan):
     """Open and slice nii file for each subject & run, based on the associated tsv file
 
     Parameters
@@ -388,6 +388,8 @@ def load_sliced_nii(fpath, tsv_fpath, cond='All'):
         Which run is being processed (example, 1 for run-01)
     cond : string
         The cond that should be chosen from the sliced data
+    number : int
+        Which section of each run you want (set cond = 'None' and then set int 0-5
 
     Returns
     ----------
@@ -402,7 +404,7 @@ def load_sliced_nii(fpath, tsv_fpath, cond='All'):
     data = nib.load(fpath).get_fdata().T[3:]
 
     for index, row in df.iterrows():
-        if cond == 'All' or cond in row['trial_type']:
+        if index == number or cond == 'All' or cond in row['trial_type']:
             start = int((row['onset']/TR) + 1)
             end = int(start + (row['duration']/TR))
             intact_data.append(data[start:end])

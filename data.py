@@ -26,27 +26,27 @@ def find_valid_vox(fpath, subjects, min_subjs=15):
     D_num_not_nan = []
     MNI_mask_path = fpath + 'scripts/preproc/MNI152_T1_brain_resample.nii' # used in both mainproc and preproc, should have in both?
 
-    for subj in subjects:
-        for run in range(3):
-            sub_value = subj[subj.find('sub'):subj.find('sub')+6] # this takes subj and returns sub-01, etc
-            run_value = 'run-0{}'.format(run+1) # this takes run # and returns run-01, etc
-            fname = fpath + 'pre_outputs/{}/{}_{}_tf_func.nii.gz'.format(sub_value, sub_value, run_value)
-            tsv_fpath = fpath + 'raw_data/{}/func/{}_task-movie_{}_events.tsv'.format(sub_value, sub_value, run_value)
-            intact_data = load_sliced_nii(fname, tsv_fpath) # this is added to divide clips on the fly
-            D_rep = np.zeros((121, 145, 121, 60))
-            D_not_nan = np.zeros((121, 145, 121))
+    for rep in range(6):
+        D_rep = np.zeros((121, 145, 121, 60))
+        D_not_nan = np.zeros((121, 145, 121))
+        for subj in subjects:
+                for run in range(3):
+                    sub_value = subj[subj.find('sub'):subj.find('sub')+6] # this takes subj and returns sub-01, etc
+                    run_value = 'run-0{}'.format(run+1) # this takes run # and returns run-01, etc
+                    fname = fpath + 'pre_outputs/{}/{}_{}_tf_func.nii.gz'.format(sub_value, sub_value, run_value)
+                    tsv_fpath = fpath + 'raw_data/{}/func/{}_task-movie_{}_events.tsv'.format(sub_value, sub_value, run_value)
+                    intact_data = load_sliced_nii(fname, tsv_fpath, 'None', rep) # this is added to divide clips on the fly
 
-            for i in range(len(intact_data)):
-                rep_z = intact_data[i].T
-                nnan = ~np.all(rep_z == 0, axis=3) # nnan stands for not NaN
-                rep_mean = np.mean(rep_z[nnan], axis=1, keepdims=True)
-                rep_std = np.std(rep_z[nnan], axis=1, keepdims=True)
-                rep_z[nnan] = (rep_z[nnan] - rep_mean)/rep_std # z scoring
+                    rep_z = intact_data[rep].T
+                    nnan = ~np.all(rep_z == 0, axis=3) # nnan stands for not NaN
+                    rep_mean = np.mean(rep_z[nnan], axis=1, keepdims=True)
+                    rep_std = np.std(rep_z[nnan], axis=1, keepdims=True)
+                    rep_z[nnan] = (rep_z[nnan] - rep_mean)/rep_std # z scoring
 
-                D_rep[nnan] += rep_z[nnan] # this is not used in this function, no need to calc
-                D_not_nan[nnan] += 1 # adding 1 at every voxel that is 'valid' (not nan) from array of zeros
+                    D_rep[nnan] += rep_z[nnan] # this is not used in this function, no need to calc
+                    D_not_nan[nnan] += 1 # adding 1 at every voxel that is 'valid' (not nan) from array of zeros
 
-            D_num_not_nan.append(D_not_nan.T) # putting together all 3 runs for one subj
+                    D_num_not_nan.append(D_not_nan.T) # putting together all 3 runs for one subj
 
     non_nan_mask = np.min(D_num_not_nan, axis=0) # Min across reps (if value is 0 for any one of three reps, that is chosen)
     MNI_mask = nib.load(MNI_mask_path).get_fdata().astype(bool).T
