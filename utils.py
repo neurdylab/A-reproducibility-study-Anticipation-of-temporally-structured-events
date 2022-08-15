@@ -1,5 +1,6 @@
 from copy import deepcopy
 import numpy as np
+import pandas as pd
 import nibabel as nib
 from scipy.stats import pearsonr, zscore
 from brainiak.eventseg.event import EventSegment
@@ -375,3 +376,37 @@ def save_nii(new_fpath, header_fpath, data):
     img = nib.load(header_fpath)
     new_img = nib.Nifti1Image(data.T, img.affine, img.header)
     nib.save(new_img, new_fpath)
+
+def load_sliced_nii(fpath, tsv_fpath, cond='All', number=np.nan):
+    """Open and slice nii file for each subject & run, based on the associated tsv file
+
+    Parameters
+    ----------
+    sub-value : string
+        The subject that is being used (example sub-01)
+    run : int
+        Which run is being processed (example, 1 for run-01)
+    cond : string
+        The cond that should be chosen from the sliced data
+    number : int
+        Which section of each run you want (set cond = 'None' and then set int 0-5
+
+    Returns
+    ----------
+    intact_data : list of ndarray
+        Each ndarray represents a clip
+    """
+    #start_values = [5, 71, 137, 203, 269, 335]
+    #end_values = [64, 130, 196, 262, 328, 394]
+    TR = 1.5
+    intact_data = []
+    df = pd.read_csv(tsv_fpath, sep='\t')
+    data = nib.load(fpath).get_fdata().T[3:]
+
+    for index, row in df.iterrows():
+        if index == number or cond == 'All' or cond in row['trial_type']:
+            start = int((row['onset']/TR) + 1)
+            end = int(start + (row['duration']/TR))
+            intact_data.append(data[start:end])
+
+    return intact_data

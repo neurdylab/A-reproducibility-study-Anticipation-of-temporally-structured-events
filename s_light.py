@@ -66,13 +66,14 @@ def optimal_events(data_list, subjects):
         Number of events with highest log-likelihood
     """
 
-    K_range = np.arange(2, 10)
+    K_range = np.arange(2, 10) # number of events to test
     ll = np.zeros(len(K_range))
-    split = np.array([('predtrw01' in s) for s in subjects])
+    split = np.concatenate((np.full(len(subjects)/2, True), np.full(len(subjects)/2, False))) # creates array of half true half false, assumes even number of subjects
+    #split = np.array([('04' in s) for s in subjects]) # hard coded 04, would normally have conditional btwn first and second half of data
     rep1 = np.array([d[0] for d in data_list])
     for i, K in enumerate(K_range):
-        ll[i] = heldout_ll(rep1, K, split)
-    return K_range[np.argmax(ll)]
+        ll[i] = heldout_ll(rep1, K, split) # calculating the likelihood of each # of events being correct
+    return K_range[np.argmax(ll)] # for some reason, on the data I chose (last 5 searchlights) the event seg always returned 2
 
 def compile_optimal_events(pickle_path, non_nan_mask, SL_allvox,
                            header_fpath, save_path):
@@ -99,7 +100,7 @@ def compile_optimal_events(pickle_path, non_nan_mask, SL_allvox,
         pickle_fname = '%soptimal_events_%d.p' % (pickle_path, sl_i)
         sl_K[sl_i] = pickle.load(open(pickle_fname, 'rb'))
 
-    K_vox3d = get_vox_map(sl_K, SL_allvox, non_nan_mask, return_q=False)
+    K_vox3d = get_vox_map(sl_K, SL_allvox, non_nan_mask, return_q=False) # putting optimal event data together with valid voxels
     save_nii(save_path + 'optimal_events.nii', header_fpath, K_vox3d)
 
 
@@ -142,7 +143,7 @@ def compile_fit_HMM(pickle_path, non_nan_mask, SL_allvox,
     """
 
     nSL = 5354
-    nPerm = 100
+    nPerm = 3 #100
     TR = 1.5
     nEvents = 7
     max_lag = 10
@@ -248,6 +249,7 @@ def compile_fit_HMM(pickle_path, non_nan_mask, SL_allvox,
     z = (K_spear[0]-K_spear[1:].mean(0))/np.std(K_spear[1:])
     print('p val=',norm.sf(z))
 
+
 def shift_corr(data_list, max_shift):
     """Compute cross-correlation between initial and repeated viewings
 
@@ -290,7 +292,7 @@ def compile_shift_corr(pickle_path, non_nan_mask, SL_allvox,
     """
 
     nSL = 5354
-    nPerm = 100
+    nPerm = 3 #100
     TR = 1.5
     max_lag = 10
 
@@ -306,7 +308,7 @@ def compile_shift_corr(pickle_path, non_nan_mask, SL_allvox,
 
         cs, cs_q = get_vox_map(corrshift, SL_allvox, non_nan_mask)
         save_nii(save_path + 'shift_corr.nii', header_fpath, cs)
-        save_nii(save_path + 'shift_corr_q.nii', header_fpath, cs_q)
+        save_nii(save_path + 'shift_corr_q.nii', header_fpath, cs_q) # q is FDR corrected p values
 
 def get_vox_map(SL_results, SL_voxels, non_nan_mask, return_q=True):
     """Projects searchlight results to voxel maps.
@@ -333,7 +335,7 @@ def get_vox_map(SL_results, SL_voxels, non_nan_mask, return_q=True):
 
     coords = np.transpose(np.where(non_nan_mask))
     nVox = coords.shape[0]
-    if SL_results[0].ndim == 1:
+    if SL_results[0].ndim == 1: # type(SL_results[0]) is list or 
         nMaps = 1
         nPerm = len(SL_results[0])
     else:
