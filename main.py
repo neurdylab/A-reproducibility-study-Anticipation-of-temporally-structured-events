@@ -39,6 +39,7 @@ save_s_lights(fpath + 'pre_outputs/', non_nan, fpath + 'pre_outputs/SL/')
 # This will take ~1000 CPU hours, and so should be run
 # in parallel on a cluster if possible
 
+
 for sl_i in range(nSL):
 
     # Load data for this searchlight

@@ -1,6 +1,7 @@
 from copy import deepcopy
 import numpy as np
 import pandas as pd
+import pandas as pd
 import nibabel as nib
 from scipy.stats import pearsonr, zscore
 from brainiak.eventseg.event import EventSegment

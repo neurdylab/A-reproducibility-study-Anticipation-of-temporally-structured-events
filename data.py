@@ -3,6 +3,7 @@ import pickle
 import tables
 import numpy as np
 import pandas as pd
+import pandas as pd
 import nibabel as nib
 import os
 from s_light import get_s_lights
@@ -54,7 +55,6 @@ def find_valid_vox(fpath, subjects, min_subjs=15):
     for rep in range(6):
         # D_rep = np.zeros((121, 145, 121, 60))
         D_not_nan = np.zeros((121, 145, 121))
-
         for subj in subjects:
             print('.', end='', flush=True)
             fname = glob.glob(subj + '/*IN*' +
@@ -113,7 +113,7 @@ def save_s_lights(fpath, non_nan_mask, savepath):
         for cond in ['IN', 'SF', 'SR']:
             print("   " + cond)
             all_rep = []
-            for rep in range(6):
+            for i in range(6):
                 # Load and z-score data
                 fname = glob.glob(subj + '/*' +
                                 cond + '*' + str(rep + 1) + '.nii.gz')
