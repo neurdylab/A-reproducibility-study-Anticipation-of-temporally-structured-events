@@ -67,7 +67,7 @@ def optimal_events(data_list, subjects):
 
     K_range = np.arange(2, 10) # number of events to test
     ll = np.zeros(len(K_range))
-    split = np.concatenate((np.full(len(subjects)/2, True), np.full(len(subjects)/2, False))) # creates array of half true half false, assumes even number of subjects
+    split = np.concatenate((np.full(int(len(subjects)/2), True), np.full(int(len(subjects)/2), False))) # creates array of half true half false, assumes even number of subjects
     #split = np.array([('04' in s) for s in subjects]) # hard coded 04, would normally have conditional btwn first and second half of data
     rep1 = np.array([d[0] for d in data_list])
     for i, K in enumerate(K_range):
@@ -75,7 +75,7 @@ def optimal_events(data_list, subjects):
     return K_range[np.argmax(ll)] # for some reason, on the data I chose (last 5 searchlights) the event seg always returned 2
 
 def compile_optimal_events(pickle_path, non_nan_mask, SL_allvox,
-                           header_fpath, save_path):
+                            header_fpath, save_path):
     """Create MNI map of optimal event numbers
 
     Parameters
@@ -92,7 +92,7 @@ def compile_optimal_events(pickle_path, non_nan_mask, SL_allvox,
         Location of output directory
     """
 
-    nSL = 5354
+    nSL = 5247 # 5354
 
     sl_K = nSL*[None]
     for sl_i in range(nSL):
@@ -141,7 +141,7 @@ def compile_fit_HMM(pickle_path, non_nan_mask, SL_allvox,
         3d volume, result of optimal_event analysis
     """
 
-    nSL = 5354
+    nSL = 5247 # 5354
     nPerm = 3 #100
     TR = 1.5
     nEvents = 7
@@ -154,6 +154,7 @@ def compile_fit_HMM(pickle_path, non_nan_mask, SL_allvox,
 
     # Load data from all searchlights
     for sl_i in range(nSL):
+        sl_i = 826
         sl_AUCdiffs[sl_i] = np.zeros((6-1, nPerm))
         lag_corr[sl_i] = np.zeros((6, 1 + 2*max_lag, nPerm))
         peak_shift[sl_i] = np.zeros(nPerm)
@@ -163,6 +164,7 @@ def compile_fit_HMM(pickle_path, non_nan_mask, SL_allvox,
 
         # Compute anticipation and shift in correlation with annotations
         for p in range(nPerm):
+            p = 1
             seg = pick_data[p]
             AUC = get_AUCs(seg)
             sl_AUCdiffs[sl_i][:,p] = TR/(nEvents-1) * (AUC[1:]-AUC[0])
@@ -170,26 +172,26 @@ def compile_fit_HMM(pickle_path, non_nan_mask, SL_allvox,
             for rep in range(6):
                 sl_DT = get_DTs(seg[rep])
                 lag_corr[sl_i][rep,:,p] = lag_pearsonr(sl_DT, ev_conv[1:],
-                                                       max_lag)
+                                                        max_lag)
                 peaks[rep] = nearest_peak(lag_corr[sl_i][rep,:,p])
             peak_shift[sl_i][p] = TR*(peaks[1:].mean(0)-peaks[0])
 
         # Compute statistics for SLs for Figure 5
-        if sl_i in [2614, 1479, 1054]:
-            nBoot = 100
-            bootstrap_rng = default_rng(0)
-            boot_peak = np.zeros((nBoot, 6))
-            for b in range(nBoot):
-                ev_conv = hrf_convolution(ev_annot_freq(bootstrap_rng))
-                for rep in range(6):
-                    sl_DT = get_DTs(pick_data[0][rep])
-                    boot_lag = lag_pearsonr(sl_DT, ev_conv[1:], max_lag)
-                    boot_peak[b,rep] = nearest_peak(boot_lag)
-            CI_init = TR*(max_lag - np.sort(boot_peak[:,0])[[5,95-1]])
-            CI_rep = TR*(max_lag - np.sort(boot_peak[:,1:].mean(1))[[5,95-1]])
+        # if sl_i in [2614, 1479, 1054]:
+        #     nBoot = 100
+        #     bootstrap_rng = default_rng(0)
+        #     boot_peak = np.zeros((nBoot, 6))
+        #     for b in range(nBoot):
+        #         ev_conv = hrf_convolution(ev_annot_freq(bootstrap_rng))
+        #         for rep in range(6):
+        #             sl_DT = get_DTs(pick_data[0][rep])
+        #             boot_lag = lag_pearsonr(sl_DT, ev_conv[1:], max_lag)
+        #             boot_peak[b,rep] = nearest_peak(boot_lag)
+        #     CI_init = TR*(max_lag - np.sort(boot_peak[:,0])[[5,95-1]])
+        #     CI_rep = TR*(max_lag - np.sort(boot_peak[:,1:].mean(1))[[5,95-1]])
 
-            print('%d: First Peak CI = %f, Rep Peak CI = %f' %
-                  (sl_i, CI_init, CI_rep))
+        #     print('%d: First Peak CI = %f, Rep Peak CI = %f' %
+        #             (sl_i, CI_init, CI_rep))
 
     # Create map of shifts in peak correlation with annotations
     pldiff, pldiff_q = get_vox_map(peak_shift, SL_allvox, non_nan_mask)
@@ -201,17 +203,17 @@ def compile_fit_HMM(pickle_path, non_nan_mask, SL_allvox,
     AUCdiff, AUCdiff_q = get_vox_map(sl_AUCdiffs, SL_allvox, non_nan_mask)
     for i in range(AUCdiff.shape[3]):
         save_nii(save_path + 'AUCdiff_' + str(i) + '.nii', header_fpath,
-                 AUCdiff[:,:,:,i])
+                AUCdiff[:,:,:,i])
         save_nii(save_path + 'AUCdiff_' + str(i) + '_q.nii', header_fpath,
-                 AUCdiff_q[:,:,:,i])
+                AUCdiff_q[:,:,:,i])
 
     for sl_i in range(nSL):
         sl_AUCdiffs[sl_i] = sl_AUCdiffs[sl_i].mean(0)
     AUCdiff, AUCdiff_q = get_vox_map(sl_AUCdiffs, SL_allvox, non_nan_mask)
     save_nii(save_path + 'AUCdiff_' + str(i) + '_mean.nii', header_fpath,
-             AUCdiff)
+            AUCdiff)
     save_nii(save_path + 'AUCdiff_' + str(i) + '_mean_q.nii', header_fpath,
-             AUCdiff_q)
+            AUCdiff_q)
 
     # Correlate anticipation with coordinates
     coords_nonnan = np.transpose(np.where(non_nan_mask))
@@ -273,7 +275,7 @@ def shift_corr(data_list, max_shift):
     return lag_pearsonr(rep1, rep2_6, max_shift)
 
 def compile_shift_corr(pickle_path, non_nan_mask, SL_allvox,
-                       header_fpath, save_path):
+                        header_fpath, save_path):
     """Create map of peak of shift_corr
 
     Parameters
@@ -290,7 +292,7 @@ def compile_shift_corr(pickle_path, non_nan_mask, SL_allvox,
         Location of output directory
     """
 
-    nSL = 5354
+    nSL = 5247 # 5354
     nPerm = 3 #100
     TR = 1.5
     max_lag = 10
@@ -334,12 +336,14 @@ def get_vox_map(SL_results, SL_voxels, non_nan_mask, return_q=True):
 
     coords = np.transpose(np.where(non_nan_mask))
     nVox = coords.shape[0]
-    if SL_results[0].ndim == 1: # type(SL_results[0]) is list or 
-        nMaps = 1
-        nPerm = len(SL_results[0])
-    else:
-        nMaps = SL_results[0].shape[0]
-        nPerm = SL_results[0].shape[1]
+    # if SL_results[0].ndim == 1: # type(SL_results[0]) is list or 
+    #     nMaps = 1
+    #     nPerm = len(SL_results[0])
+    # else:
+    #     nMaps = SL_results[0].shape[0]
+    #     nPerm = SL_results[0].shape[1]
+    nMaps = 1
+    nPerm = 3
 
     voxel_maps = np.zeros((nMaps, nPerm, nVox))
     voxel_SLcount = np.zeros(nVox)

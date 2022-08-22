@@ -66,7 +66,9 @@ def find_valid_vox(fpath, subjects, min_subjs=15):
             print(fname[0])
 
             rep_z = nib.load(fname[0]).get_fdata()
-            nnan = ~np.all(rep_z <= np.percentile(rep_z, 10), axis=3) 
+            # nnan = ~np.all(rep_z == 0, axis=3) 
+            nnan = ~np.squeeze(np.std(rep_z, axis=3, keepdims=True) == 0) # find voxels with std == 0
+            # nnan = ~np.all(rep_z <= np.percentile(rep_z, 10), axis=3) 
             # rep_mean = np.mean(rep_z[nnan], axis=1, keepdims=True) # mean for each voxel
             # rep_std = np.std(rep_z[nnan], axis=1, keepdims=True) # std for each voxel
             # rep_z[nnan] = (rep_z[nnan] - rep_mean)/rep_std
@@ -117,9 +119,13 @@ def save_s_lights(fpath, non_nan_mask, savepath):
                                 cond + '*' + str(rep + 1) + '.nii.gz')
                 rep_z = nib.load(fname[0]).get_fdata().T
                 rep_z = rep_z[:, non_nan_mask]
-                nnan = ~np.all(rep_z == 0, axis=0) 
+
+                nnan = ~np.squeeze(np.std(rep_z, axis=0, keepdims=True) == 0) # find voxels with std == 0
+                # nnan = ~np.all(rep_z == 0, axis=0) 
+
                 rep_mean = np.mean(rep_z[:,nnan], axis=0, keepdims=True)
                 rep_std = np.std(rep_z[:,nnan], axis=0, keepdims=True)
+
                 rep_z[:,nnan] = (rep_z[:,nnan] - rep_mean)/rep_std
                 all_rep.append(rep_z)
 

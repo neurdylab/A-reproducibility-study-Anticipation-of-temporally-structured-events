@@ -4,7 +4,7 @@ import pandas as pd
 import nibabel as nib
 from scipy.stats import pearsonr, zscore
 from brainiak.eventseg.event import EventSegment
-# from brainiak.funcalign.srm import DetSRM
+from brainiak.funcalign.srm import DetSRM
 
 def nearest_peak(v):
     """Estimates location of local maximum nearest the origin
@@ -411,7 +411,7 @@ def save_clip_nii(fpath, tsv_fpath, cond='All'):
     for index, row in df.iterrows():
         if cond == 'All' or cond in row['trial_type']:
             start = int((row['onset']/tr))
-            end = int(start + (row['duration']/tr)-1)
+            end = int(start + (row['duration']/tr))
             if len(row['trial_type'].strip().split(" ")) > 2: 
                 abb = ''.join(x[0].upper() for x in row['trial_type'].strip().split(" ")[:2])
             else:
