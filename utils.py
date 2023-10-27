@@ -71,10 +71,17 @@ def hyperalign(subj_list, nFeatures=10):
 
     nReps = subj_list[0].shape[0]
     nTRs = subj_list[0].shape[1]
+    print(len(subj_list))
+    for i in range(5):
+        for j in range(30):
+            initial0=pd.DataFrame(subj_list[j][i])
+            string = "/data/neurogroup/anticipation_rg/debug/sl0/initial" + str(j) + "_" + str(i) + ".csv"
+            initial0.to_csv(string)
+            
 
     # Remove voxels that are all 0
     subj_list = [d[:,:,np.all(~np.all(d == 0, axis=1), axis=0)]
-                 for d in subj_list]
+                for d in subj_list]
     # Remove any subjects with fewer voxels than nFeatures
     subj_list = [d for d in subj_list if d.shape[2] >= nFeatures]
 
@@ -82,8 +89,11 @@ def hyperalign(subj_list, nFeatures=10):
     srm = DetSRM(features=nFeatures)
     srm.fit(subj_list)
     shared = srm.transform(subj_list)
+    
+    #shared = [zscore(d, axis=1, ddof=1) for d in shared]
+    #shared = [d.reshape(d.shape[0], nTRs, nReps).T for d in shared]
     shared = [zscore(d.reshape(d.shape[0], nTRs, nReps), axis=1, ddof=1).T
-              for d in shared]
+        for d in shared]
     return shared
 
 def heldout_ll(data, n_events, split):
@@ -114,6 +124,7 @@ def heldout_ll(data, n_events, split):
 
     # Remove nan voxels
     nan_idxs = np.where(np.isnan(d))
+    # print(nan_idxs)
     nan_idxs = list(set(nan_idxs[2]))
     d = np.delete(np.asarray(d), nan_idxs, axis=2)
 
@@ -148,9 +159,9 @@ def tj_fit(data, n_events=7):
 
     nan_idxs = np.where(np.isnan(d))
     nan_idxs = list(set(nan_idxs[2]))
-
     d = np.delete(np.asarray(d), nan_idxs, axis=2)
-
+    print(d.shape)
+    print("test2")
     ev_obj = EventSegment(n_events).fit(list(d))
 
     return ev_obj.segments_
@@ -177,7 +188,7 @@ def get_AUCs(segs):
     """
 
     auc = [round(np.dot(segs[rep], np.arange(segs[rep].shape[1])).sum(), 2)
-           for rep in range(len(segs))]
+        for rep in range(len(segs))]
 
     return np.asarray(auc)
 
@@ -287,19 +298,19 @@ def ev_annot_freq(bootstrap_rng=None):
 
     ev_annots = np.asarray(
         [[5, 12, 54, 77, 90],
-         [3, 12, 23, 30, 36, 43, 50, 53, 78, 81, 87, 90],
-         [11, 23, 30, 50, 74],
-         [1, 55, 75, 90],
-         [4, 10, 53, 77, 82, 90],
-         [11, 54, 77, 81, 90],
-         [12, 22, 36, 54, 78],
-         [12, 52, 79, 90],
-         [10, 23, 30, 36, 43, 50, 77, 90],
-         [13, 55, 79, 90],
-         [4, 10, 23, 29, 35, 44, 51, 56, 77, 80, 85, 90],
-         [11, 55, 78, 90],
-         [11, 30, 43, 54, 77, 90],
-         [4, 11, 24, 30, 38, 44, 54, 77, 90]],
+            [3, 12, 23, 30, 36, 43, 50, 53, 78, 81, 87, 90],
+            [11, 23, 30, 50, 74],
+            [1, 55, 75, 90],
+            [4, 10, 53, 77, 82, 90],
+            [11, 54, 77, 81, 90],
+            [12, 22, 36, 54, 78],
+            [12, 52, 79, 90],
+            [10, 23, 30, 36, 43, 50, 77, 90],
+            [13, 55, 79, 90],
+            [4, 10, 23, 29, 35, 44, 51, 56, 77, 80, 85, 90],
+            [11, 55, 78, 90],
+            [11, 30, 43, 54, 77, 90],
+            [4, 11, 24, 30, 38, 44, 54, 77, 90]],
     dtype=object)
 
     nAnnots = len(ev_annots)
@@ -337,7 +348,7 @@ def hrf_convolution(ev_annots_freq):
 
 
     return np.interp(np.linspace(0, (nTR - 1) * TR, nTR),
-                     np.arange(0, T), X_conv)
+                    np.arange(0, T), X_conv)
 
 
 def get_DTs(ev_seg):
@@ -377,8 +388,8 @@ def save_nii(new_fpath, header_fpath, data):
     new_img = nib.Nifti1Image(data.T, img.affine, img.header)
     nib.save(new_img, new_fpath)
 
-def load_sliced_nii(fpath, tsv_fpath, cond='All', number=np.nan):
-    """Open and slice nii file for each subject & run, based on the associated tsv file
+def save_clip_nii(fpath, tsv_fpath, cond='All'):
+    """Open and cut fmri image into clips for each subject & run, based on the associated tsv file
 
     Parameters
     ----------
@@ -388,25 +399,37 @@ def load_sliced_nii(fpath, tsv_fpath, cond='All', number=np.nan):
         Which run is being processed (example, 1 for run-01)
     cond : string
         The cond that should be chosen from the sliced data
-    number : int
-        Which section of each run you want (set cond = 'None' and then set int 0-5
 
     Returns
     ----------
-    intact_data : list of ndarray
+    clips : list of ndarray
         Each ndarray represents a clip
     """
+    #values reported in the data description
     #start_values = [5, 71, 137, 203, 269, 335]
     #end_values = [64, 130, 196, 262, 328, 394]
-    TR = 1.5
-    intact_data = []
-    df = pd.read_csv(tsv_fpath, sep='\t')
-    data = nib.load(fpath).get_fdata().T[3:]
+
+    clips = []
+    print(fpath)
+    df = pd.read_csv(tsv_fpath, engine='python', sep='\t')
+    data = nib.load(fpath)
+    img = data.get_fdata().T[3:] # remove first 3 volumes
+
+    hdr_fpath = fpath
+    hdr = data.get_header()
+    tr = float(hdr.get_zooms()[3]) # temporal resolution of fMRI
 
     for index, row in df.iterrows():
-        if index == number or cond == 'All' or cond in row['trial_type']:
-            start = int((row['onset']/TR) + 1)
-            end = int(start + (row['duration']/TR))
-            intact_data.append(data[start:end])
+        if cond == 'All' or cond in row['trial_type']:
+            start = int((row['onset']/tr))
+            end = int(start + (row['duration']/tr))
+            if len(row['trial_type'].strip().split(" ")) > 2: 
+                abb = ''.join(x[0].upper() for x in row['trial_type'].strip().split(" ")[:2])
+            else:
+                abb = row['trial_type'].strip().split(" ")[0][:2].upper()
+            new_fpath = fpath[:-12] + abb + '-0' + str(index+1) + fpath[-7:] # output path
 
-    return intact_data
+            # save each clip separately
+            new_img = nib.Nifti1Image(img[start:end].T, data.affine, data.header)
+            nib.save(new_img, new_fpath)
+            print('Saved ' + new_fpath)
