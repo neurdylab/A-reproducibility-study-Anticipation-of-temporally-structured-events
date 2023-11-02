@@ -10,4 +10,4 @@
 #SBATCH --job-name=anticipation_test1
 
 # Put commands for executing job below this line
-singularity exec /data/neurogroup/anticipation_rg/proc2/anticipation6.sif python3 /data/neurogroup/anticipation_rg/proc2/main1.py
+singularity exec /data/neurogroup/anticipation_rg/proc2/anticipation6.sif python3 /data/neurogroup/anticipation_rg/og-code/main1.py

@@ -16,6 +16,6 @@
 # array job
 #singularity exec /scratch/guntakrr/proc2/anticipation6.sif python3 /scratch/guntakrr/proc2/main2.py 0
 #/bin/bash /scratch/guntakrr/proc2/anticipation.sh 1
-mapfile -t cmds < /data/neurogroup/anticipation_rg/proc2/anticipation_subjects2.csv
+mapfile -t cmds < /data/neurogroup/anticipation_rg/og-code/anticipation_subjects2.csv
 eval ${cmds[$SLURM_ARRAY_TASK_ID]}
 #0-5205%10
