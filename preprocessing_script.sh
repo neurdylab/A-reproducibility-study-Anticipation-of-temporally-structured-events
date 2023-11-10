@@ -5,17 +5,11 @@ cd ..
 # to run just a subset of subjects easier.
 # 
 
-# `seq -w 1 30`
-# "sub-$id"
-for id in `seq -w 16 30` ; do
-#for id in `seq 1` ; do
+for id in `seq -w 1 30` ; do
     for id2 in `seq 1 3` ; do
-    #for id2 in `seq 1` ; do
-        #subj="sub-$id"
         subj="sub-$id"
         run="run-0$id2"
-        #subj="sub-14"
-        #run="run-03"
+    
         echo "===> Starting processing of $subj  $run"
         cd raw_data/$subj
 
