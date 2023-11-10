@@ -3,11 +3,19 @@
 cd ..
 # Generate the subject list to make modifying this script
 # to run just a subset of subjects easier.
+# 
 
-for id in `seq -w 1 30` ; do
+# `seq -w 1 30`
+# "sub-$id"
+for id in `seq -w 16 30` ; do
+#for id in `seq 1` ; do
     for id2 in `seq 1 3` ; do
+    #for id2 in `seq 1` ; do
+        #subj="sub-$id"
         subj="sub-$id"
         run="run-0$id2"
+        #subj="sub-14"
+        #run="run-03"
         echo "===> Starting processing of $subj  $run"
         cd raw_data/$subj
 
@@ -15,7 +23,14 @@ for id in `seq -w 1 30` ; do
         if [ ! -f anat/${subj}_T1w_brain.nii.gz ]; then
             echo "Skull-stripped brain anat not found, using bet with a fractional intensity threshold of 0.5"
             bet2 anat/${subj}_T1w.nii.gz \
-                anat/${subj}_T1w_brain.nii.gz -f 0.5
+                anat/${subj}_T1w_brain.nii.gz -f 0.5 ## not sure about 0.5
+        fi
+
+        # If the functional is not stripped, create it
+        if [ ! -f func/${subj}_task-movie_${run}_bold_brain.nii.gz ]; then
+            echo "Skull-stripped brain func not found, using bet with a fractional intensity threshold of 0.5"
+            bet func/${subj}_task-movie_${run}_bold.nii.gz \
+                func/${subj}_task-movie_${run}_bold_brain.nii.gz  -F -f 0.5 ## not sure about 0.5
         fi
 
         # If averaged mag fmap doesn't exist, create it
@@ -30,7 +45,7 @@ for id in `seq -w 1 30` ; do
         if [ ! -f fmap/${subj}_magnitude_mean_brain.nii.gz ]; then
             echo "Skull-stripped brain average mag fmap not found, using bet with a fractional intensity threshold of 0.5"
             bet2 fmap/${subj}_magnitude_mean.nii.gz \
-                fmap/${subj}_magnitude_mean_brain.nii.gz -f 0.5
+                fmap/${subj}_magnitude_mean_brain.nii.gz -f 0.5 ## not sure about 0.5
         fi
 
         # If the phase fmap is not in rad/sec, convert it
@@ -62,11 +77,11 @@ for id in `seq -w 1 30` ; do
         echo "Starting feat analysis"
         feat preproc_template.fsf
 
-        cd ../../feat_outputs/${subj}_${run}_proc.feat
+        cd ../../feat_data/${subj}-${run}.feat
 
         cd reg
         echo "Starting FLIRT transformation functional to standard"
-        flirt -in ../../../raw_data/$subj/func/${subj}_task-movie_${run}_bold.nii.gz \
+        flirt -in ../../../raw_data/$subj/func/${subj}_task-movie_${run}_bold_brain.nii.gz \
             -ref standard.nii.gz -applyxfm \
             -init example_func2standard.mat \
             -out ../${subj}_${run}_tf_func.nii.gz
